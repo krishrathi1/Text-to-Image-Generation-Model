@@ -3,6 +3,7 @@ import numpy as np
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 # pytest -sv tests/learning/test_deep_learning.py
@@ -42,3 +43,31 @@ class TestDeepLearning:
         """
         sigma = softmax(torch.Tensor(z))
         assert np.isclose(torch.sum(sigma).item(), 1)
+
+    # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_shannon_entropy_numpy
+    def test_shannon_entropy_numpy(self) -> None:
+        """
+        Shannon entropy: Variability (uncertainty) within a single probability distribution
+        H(p) = -Σp(x)log(p(x))
+        """
+        P = np.array([0.25, 0.75])
+        H = -np.sum(P * np.log(P))
+        print(f"\nShannon entropy: {H}")
+        """
+        Cross entropy: A measure of difference between two probability distributions
+        H(p,q) = -Σp(x)log(q(x))
+
+        P: true distribution
+        Q: predicted distribution
+        """
+        P = np.array([0, 1])
+        Q = np.array([0.25, 0.75])
+        H = -np.sum(P * np.log(Q))
+        print(f"Cross entropy: {H}")
+
+    # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_binary_cross_entropy_torch
+    def test_binary_cross_entropy_torch(self) -> None:
+        P = torch.tensor([0.0, 1.0])
+        Q = torch.tensor([0.25, 0.75])
+        H = F.binary_cross_entropy(Q, P)
+        print(f"\nBinary cross entropy: {H}")
