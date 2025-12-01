@@ -47,14 +47,14 @@ class TestDeepLearning:
     # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_shannon_entropy_numpy
     def test_shannon_entropy_numpy(self) -> None:
         """
-        Shannon entropy: Variability (uncertainty) within a single probability distribution
+        Shannon entropy: A measure of uncertainty within a single probability distribution
         H(p) = -Σp(x)log(p(x))
         """
         P = np.array([0.25, 0.75])
         H = -np.sum(P * np.log(P))
         print(f"\nShannon entropy: {H}")
         """
-        Cross entropy: A measure of difference between two probability distributions
+        Cross entropy: A measure of how well predicted distribution explains true distribution
         H(p,q) = -Σp(x)log(q(x))
 
         P: true distribution
