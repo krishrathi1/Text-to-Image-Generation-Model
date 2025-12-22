@@ -233,7 +233,10 @@ class TestDeepLearning:
         print()
         while True:
             train_loader = DataLoader(
-                train_dataset, batch_size=m_state.batch_size, shuffle=True
+                train_dataset,
+                batch_size=m_state.batch_size,
+                shuffle=True,
+                drop_last=True,
             )
             model = self.MLP(
                 input_size,
