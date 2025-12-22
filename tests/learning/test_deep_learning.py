@@ -192,7 +192,7 @@ class TestDeepLearning:
         train_dataset = TensorDataset(x_train, y_train)
         devset_dataset = TensorDataset(x_devset, y_devset)
         test_dataset = TensorDataset(x_test, y_test)
-        batch_size = 4
+        batch_size = 16
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         devset_loader = DataLoader(devset_dataset, shuffle=False)
         test_loader = DataLoader(test_dataset, shuffle=False)
