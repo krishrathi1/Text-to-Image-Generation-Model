@@ -18,13 +18,23 @@ class TestDeepLearning:
 
     class ModelState:
 
-        _hidden_size = 8
+        _linear = False
+        _breadth = 8
+        _depth = 0
         _learning_rate = 0.01
         _num_epochs = 100
 
         @property
-        def hidden_size(self):
-            return self._hidden_size
+        def linear(self):
+            return self._linear
+
+        @property
+        def breadth(self):
+            return self._breadth
+
+        @property
+        def depth(self):
+            return self._depth
 
         @property
         def learning_rate(self):
@@ -34,9 +44,16 @@ class TestDeepLearning:
         def num_epochs(self):
             return self._num_epochs
 
-        def set_breadth(self, hidden_size: int):
-            assert hidden_size > 0, "_hidden_size must be positive"
-            self._hidden_size = hidden_size
+        def set_linear(self, linear: bool):
+            self._linear = linear
+
+        def set_breadth(self, breadth: int):
+            assert breadth > 0, "_breadth must be positive"
+            self._breadth = breadth
+
+        def set_depth(self, depth: int):
+            assert depth >= 0, "_depth must be non-negative"
+            self._depth = depth
 
         def set_lr(self, learning_rate: float):
             assert learning_rate > 0, "_learning_rate must be positive"
@@ -191,10 +208,18 @@ class TestDeepLearning:
         criterion = nn.CrossEntropyLoss()
         print()
         while True:
-            model = self.MLP(input_size, m_state.hidden_size, output_size, depth=1)
+            model = self.MLP(
+                input_size,
+                m_state.breadth,
+                output_size,
+                linear=m_state.linear,
+                depth=m_state.depth,
+            )
             model.train()
             optimizer = optim.SGD(model.parameters(), lr=m_state.learning_rate)
-            print("\nHidden Size:", m_state.hidden_size)
+            print("\nLinearity:", m_state.linear)
+            print("Breadth of hidden layers:", m_state.breadth)
+            print("Depth of hidden layers:", m_state.depth)
             print("Learning Rate:", m_state.learning_rate)
             print("Number of Epochs:", m_state.num_epochs, "\n")
             losses = torch.zeros(m_state.num_epochs)
@@ -231,23 +256,30 @@ class TestDeepLearning:
                 accuracy = 100 * correct / total
                 print(f"Accuracy of the model on the devset data: {accuracy:.2f} %")
             while (
-                option := input(
-                    "Choose an option (0: Test, 1: Hidden Size, 2: Learning Rate, 3: Number of Epochs): "
+                (
+                    option := input(
+                        """Choose an option
+    0) Test
+    1) Linearity (0: False, 1: True)
+    2) Breadth of hidden layers
+    3) Depth of hidden layers
+    4) Learning Rate
+    5) Number of Epochs
+    : """
+                    )
                 )
-            ) not in (
-                "0",
-                "1",
-                "2",
-                "3",
+                not in ("0", "1", "2", "3", "4", "5")
             ):
                 print("Invalid choice. Please try again.")
             print()
             if int(option):
                 set_val = input("Set value : ")
                 {
-                    "1": lambda: m_state.set_breadth(int(set_val)),
-                    "2": lambda: m_state.set_lr(float(set_val)),
-                    "3": lambda: m_state.set_epochs(int(set_val)),
+                    "1": lambda: m_state.set_linear(bool(int(set_val))),
+                    "2": lambda: m_state.set_breadth(int(set_val)),
+                    "3": lambda: m_state.set_depth(int(set_val)),
+                    "4": lambda: m_state.set_lr(float(set_val)),
+                    "5": lambda: m_state.set_epochs(int(set_val)),
                 }.get(option, lambda: "Invalid.")()
                 continue
             model.eval()
