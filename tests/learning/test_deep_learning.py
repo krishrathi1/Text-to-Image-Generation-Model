@@ -244,7 +244,12 @@ class TestDeepLearning:
                 dropout_rate=m_state.dropout_rate,
             )
             model.train()
-            optimizer = optim.SGD(model.parameters(), lr=m_state.learning_rate)
+            """
+            weight_decay: hyperparameter (λ) to control L2 penalty
+            """
+            optimizer = optim.SGD(
+                model.parameters(), lr=m_state.learning_rate, weight_decay=0.01
+            )
             print("\nLinearity:", m_state.linear)
             print("Breadth of hidden layers:", m_state.breadth)
             print("Depth of hidden layers:", m_state.depth)
