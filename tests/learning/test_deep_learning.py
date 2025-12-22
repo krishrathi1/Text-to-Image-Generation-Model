@@ -19,10 +19,12 @@ class TestDeepLearning:
     class ModelState:
 
         _linear = False
-        _breadth = 8
+        _breadth = 10
         _depth = 0
         _learning_rate = 0.01
         _num_epochs = 100
+        _batch_size = 16
+        _dropout_rate = 0.1
 
         @property
         def linear(self):
@@ -44,6 +46,14 @@ class TestDeepLearning:
         def num_epochs(self):
             return self._num_epochs
 
+        @property
+        def batch_size(self):
+            return self._batch_size
+
+        @property
+        def dropout_rate(self):
+            return self._dropout_rate
+
         def set_linear(self, linear: bool):
             self._linear = linear
 
@@ -63,6 +73,16 @@ class TestDeepLearning:
             assert num_epochs > 0, "_num_epochs must be positive"
             self._num_epochs = num_epochs
 
+        def set_batch_size(self, batch_size: int):
+            assert batch_size > 0, "_batch_size must be positive"
+            self._batch_size = batch_size
+
+        def set_dropout_rate(self, dropout_rate: float):
+            assert (dropout_rate >= 0) | (
+                dropout_rate <= 1
+            ), "_dropout_rate must be between 0 to 1"
+            self._dropout_rate = dropout_rate
+
     class MLP(nn.Module):
 
         _net: nn.Sequential
@@ -74,6 +94,7 @@ class TestDeepLearning:
             output_size,
             linear=False,
             depth=0,
+            dropout_rate=0.0,
         ) -> None:
             super().__init__()
             self._net = nn.Sequential(
@@ -84,13 +105,17 @@ class TestDeepLearning:
                             (
                                 [nn.Linear(breadth, breadth)]
                                 if linear
-                                else [nn.ReLU(), nn.Linear(breadth, breadth)]
+                                else [
+                                    nn.ReLU(),
+                                    nn.Dropout(dropout_rate),
+                                    nn.Linear(breadth, breadth),
+                                ]
                             )
                             for _ in range(depth)
                         ],
                         [],
                     )
-                    + ([] if linear else [nn.ReLU()])
+                    + ([] if linear else [nn.ReLU(), nn.Dropout(dropout_rate)])
                 ),
                 nn.Linear(breadth, output_size),
                 # nn.Sigmoid(),  # nn.BCELoss
@@ -192,28 +217,31 @@ class TestDeepLearning:
         train_dataset = TensorDataset(x_train, y_train)
         devset_dataset = TensorDataset(x_devset, y_devset)
         test_dataset = TensorDataset(x_test, y_test)
-        batch_size = 16
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         devset_loader = DataLoader(devset_dataset, shuffle=False)
         test_loader = DataLoader(test_dataset, shuffle=False)
         input_size = 4
         output_size = 3
         m_state = self.ModelState()
-        m_state.set_breadth(1)  # 1 -> 8
+        m_state.set_breadth(1)  # 1 -> 10
         m_state.set_lr(0.0001)  # 0.0001 -> 0.01
         m_state.set_epochs(10)  # 10 -> 100
+        m_state.set_dropout_rate(0.9)  # 0.9 -> 0.1
         """
         nn.CrossEntropyLoss: works with output_size >= 2 (Multiclass classification)
         """
         criterion = nn.CrossEntropyLoss()
         print()
         while True:
+            train_loader = DataLoader(
+                train_dataset, batch_size=m_state.batch_size, shuffle=True
+            )
             model = self.MLP(
                 input_size,
                 m_state.breadth,
                 output_size,
                 linear=m_state.linear,
                 depth=m_state.depth,
+                dropout_rate=m_state.dropout_rate,
             )
             model.train()
             optimizer = optim.SGD(model.parameters(), lr=m_state.learning_rate)
@@ -221,7 +249,9 @@ class TestDeepLearning:
             print("Breadth of hidden layers:", m_state.breadth)
             print("Depth of hidden layers:", m_state.depth)
             print("Learning Rate:", m_state.learning_rate)
-            print("Number of Epochs:", m_state.num_epochs, "\n")
+            print("Number of Epochs:", m_state.num_epochs)
+            print("Batch Size:", m_state.batch_size)
+            print("Dropout Rate:", m_state.dropout_rate, "\n")
             losses = torch.zeros(m_state.num_epochs)
             softmax = nn.Softmax(dim=1)
             for epoch_idx in range(m_state.num_epochs):
@@ -265,10 +295,12 @@ class TestDeepLearning:
     3) Depth of hidden layers
     4) Learning Rate
     5) Number of Epochs
+    6) Batch Size
+    7) Dropout Rate
     : """
                     )
                 )
-                not in ("0", "1", "2", "3", "4", "5")
+                not in ("0", "1", "2", "3", "4", "5", "6", "7")
             ):
                 print("Invalid choice. Please try again.")
             print()
@@ -280,6 +312,8 @@ class TestDeepLearning:
                     "3": lambda: m_state.set_depth(int(set_val)),
                     "4": lambda: m_state.set_lr(float(set_val)),
                     "5": lambda: m_state.set_epochs(int(set_val)),
+                    "6": lambda: m_state.set_batch_size(int(set_val)),
+                    "7": lambda: m_state.set_dropout_rate(float(set_val)),
                 }.get(option, lambda: "Invalid.")()
                 continue
             model.eval()
