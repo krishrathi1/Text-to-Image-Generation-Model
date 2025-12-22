@@ -252,24 +252,21 @@ class TestDeepLearning:
             print("Number of Epochs:", m_state.num_epochs)
             print("Batch Size:", m_state.batch_size)
             print("Dropout Rate:", m_state.dropout_rate, "\n")
-            losses = torch.zeros(m_state.num_epochs)
             softmax = nn.Softmax(dim=1)
             for epoch_idx in range(m_state.num_epochs):
                 for x, y in train_loader:
                     y_hat = model(x)  # forward pass
-                    loss = criterion(y_hat, y)  # compute loss
-                    losses[epoch_idx] = loss
+                    epoch_loss = criterion(y_hat, y)  # compute loss
                     optimizer.zero_grad()
-                    loss.backward()  # backprop
+                    epoch_loss.backward()  # backprop
                     optimizer.step()
-                if (epoch_idx + 1) % (m_state.num_epochs // 10) == 0:
-                    print(
-                        f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Loss: {loss.item():.4f}"
-                    )
-                    total_acc = 100 * torch.mean(
+                    epoch_acc = 100 * torch.mean(
                         (torch.argmax(y_hat, dim=1) == y).float()
                     )
-                    print(f"Total Accuracy: {total_acc}\n")
+                if (epoch_idx + 1) % (m_state.num_epochs // 10) == 0:
+                    print(
+                        f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Epoch Loss: {epoch_loss.item():.4f}, Epoch Accuracy: {epoch_acc}\n"
+                    )
                     assert np.allclose(
                         torch.sum(softmax(y_hat), dim=1).detach(), np.ones(len(y_hat))
                     )
