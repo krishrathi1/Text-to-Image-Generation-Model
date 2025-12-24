@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+import scipy.stats as stats
 import seaborn as sns
 import torch
 import torch.nn as nn
@@ -23,7 +24,7 @@ class TestDeepLearning:
         _depth = 0
         _learning_rate = 0.01
         _num_epochs = 100
-        _batch_size = 16
+        _batch_size = 8
         _dropout_rate = 0.1
 
         @property
@@ -192,6 +193,21 @@ class TestDeepLearning:
         iris = load_iris()
         assert isinstance(iris, dict)
         iris_df = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+        sns.violinplot(data=iris_df, inner=None)
+        sns.swarmplot(data=iris_df, color="k", size=2)
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+        self.save_current_plot(filename="iris_vln_swarmplot_before.png")
+        """
+        Z-score normalization: (feature - mean) / std
+        """
+        cols2zscore = iris_df.keys()
+        iris_df[cols2zscore] = iris_df[cols2zscore].apply(stats.zscore)
+        sns.violinplot(data=iris_df, inner=None)
+        sns.swarmplot(data=iris_df, color="k", size=2)
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+        self.save_current_plot(filename="iris_vln_swarmplot_after.png")
         iris_df["species"] = iris.target_names[iris.target]
         sns.pairplot(iris_df, hue="species")
         self.save_current_plot(filename="iris_pairplot.png")
