@@ -26,6 +26,7 @@ class TestDeepLearning:
         _num_epochs = 100
         _batch_size = 8
         _dropout_rate = 0.1
+        _batch_norm = True
 
         @property
         def linear(self):
@@ -54,6 +55,10 @@ class TestDeepLearning:
         @property
         def dropout_rate(self):
             return self._dropout_rate
+
+        @property
+        def batch_norm(self):
+            return self._batch_norm
 
         def set_linear(self, linear: bool):
             self._linear = linear
@@ -84,6 +89,9 @@ class TestDeepLearning:
             ), "_dropout_rate must be between 0 to 1"
             self._dropout_rate = dropout_rate
 
+        def set_batch_norm(self, batch_norm: bool):
+            self._batch_norm = batch_norm
+
     class MLP(nn.Module):
 
         _net: nn.Sequential
@@ -96,10 +104,11 @@ class TestDeepLearning:
             linear=False,
             depth=0,
             dropout_rate=0.0,
+            batch_norm=True,
         ) -> None:
             super().__init__()
             self._net = nn.Sequential(
-                nn.Linear(input_size, breadth),
+                nn.Linear(input_size, breadth, bias=not batch_norm),
                 *(
                     sum(
                         [
@@ -107,18 +116,31 @@ class TestDeepLearning:
                                 [nn.Linear(breadth, breadth)]
                                 if linear
                                 else [
+                                    (
+                                        nn.BatchNorm1d(breadth)
+                                        if batch_norm
+                                        else nn.Identity()
+                                    ),
                                     nn.ReLU(),
                                     nn.Dropout(dropout_rate),
-                                    nn.Linear(breadth, breadth),
+                                    nn.Linear(breadth, breadth, bias=not batch_norm),
                                 ]
                             )
                             for _ in range(depth)
                         ],
                         [],
                     )
-                    + ([] if linear else [nn.ReLU(), nn.Dropout(dropout_rate)])
+                    + (
+                        []
+                        if linear
+                        else [
+                            nn.BatchNorm1d(breadth) if batch_norm else nn.Identity(),
+                            nn.ReLU(),
+                            nn.Dropout(dropout_rate),
+                        ]
+                    )
                 ),
-                nn.Linear(breadth, output_size),
+                nn.Linear(breadth, output_size, bias=True),
                 # nn.Sigmoid(),  # nn.BCELoss
             )
 
@@ -242,6 +264,7 @@ class TestDeepLearning:
         m_state.set_lr(0.0001)  # 0.0001 -> 0.01
         m_state.set_epochs(10)  # 10 -> 100
         m_state.set_dropout_rate(0.9)  # 0.9 -> 0.1
+        m_state.set_batch_norm(False)
         """
         nn.CrossEntropyLoss: works with output_size >= 2 (Multiclass classification)
         """
@@ -261,6 +284,7 @@ class TestDeepLearning:
                 linear=m_state.linear,
                 depth=m_state.depth,
                 dropout_rate=m_state.dropout_rate,
+                batch_norm=m_state.batch_norm,
             )
             model.train()
             """
@@ -275,7 +299,8 @@ class TestDeepLearning:
             print("Learning Rate:", m_state.learning_rate)
             print("Number of Epochs:", m_state.num_epochs)
             print("Batch Size:", m_state.batch_size)
-            print("Dropout Rate:", m_state.dropout_rate, "\n")
+            print("Dropout Rate:", m_state.dropout_rate)
+            print("Batch Normalization:", m_state.batch_norm, "\n")
             softmax = nn.Softmax(dim=1)
             for epoch_idx in range(m_state.num_epochs):
                 for x, y in train_loader:
@@ -318,10 +343,11 @@ class TestDeepLearning:
     5) Number of Epochs
     6) Batch Size
     7) Dropout Rate
+    8) Batch Normalization (0: False, 1: True)
     : """
                     )
                 )
-                not in ("0", "1", "2", "3", "4", "5", "6", "7")
+                not in ("0", "1", "2", "3", "4", "5", "6", "7", "8")
             ):
                 print("Invalid choice. Please try again.")
             print()
@@ -335,6 +361,7 @@ class TestDeepLearning:
                     "5": lambda: m_state.set_epochs(int(set_val)),
                     "6": lambda: m_state.set_batch_size(int(set_val)),
                     "7": lambda: m_state.set_dropout_rate(float(set_val)),
+                    "8": lambda: m_state.set_batch_norm(bool(int(set_val))),
                 }.get(option, lambda: "Invalid.")()
                 continue
             model.eval()
