@@ -19,6 +19,7 @@ class TestDeepLearning:
 
     class ModelState:
 
+        _activation: nn.Module
         _linear = False
         _breadth = 10
         _depth = 0
@@ -27,6 +28,10 @@ class TestDeepLearning:
         _batch_size = 8
         _dropout_rate = 0.1
         _batch_norm = True
+
+        @property
+        def activation(self):
+            return self._activation
 
         @property
         def linear(self):
@@ -92,12 +97,16 @@ class TestDeepLearning:
         def set_batch_norm(self, batch_norm: bool):
             self._batch_norm = batch_norm
 
+        def set_activation(self, activation: nn.Module):
+            self._activation = activation
+
     class MLP(nn.Module):
 
         _net: nn.Sequential
 
         def __init__(
             self,
+            activation,
             input_size,
             breadth,
             output_size,
@@ -121,7 +130,7 @@ class TestDeepLearning:
                                         if batch_norm
                                         else nn.Identity()
                                     ),
-                                    nn.ReLU(),
+                                    activation,
                                     nn.Dropout(dropout_rate),
                                     nn.Linear(breadth, breadth, bias=not batch_norm),
                                 ]
@@ -135,7 +144,7 @@ class TestDeepLearning:
                         if linear
                         else [
                             nn.BatchNorm1d(breadth) if batch_norm else nn.Identity(),
-                            nn.ReLU(),
+                            activation,
                             nn.Dropout(dropout_rate),
                         ]
                     )
@@ -260,6 +269,7 @@ class TestDeepLearning:
         input_size = 4
         output_size = 3
         m_state = self.ModelState()
+        m_state.set_activation(nn.ReLU())
         m_state.set_breadth(1)  # 1 -> 10
         m_state.set_lr(0.0001)  # 0.0001 -> 0.01
         m_state.set_epochs(10)  # 10 -> 100
@@ -278,6 +288,7 @@ class TestDeepLearning:
                 drop_last=True,
             )
             model = self.MLP(
+                m_state.activation,
                 input_size,
                 m_state.breadth,
                 output_size,
@@ -293,7 +304,8 @@ class TestDeepLearning:
             optimizer = optim.SGD(
                 model.parameters(), lr=m_state.learning_rate, weight_decay=0.01
             )
-            print("\nLinearity:", m_state.linear)
+            print("\nActivation function:", m_state.activation)
+            print("Linearity:", m_state.linear)
             print("Breadth of hidden layers:", m_state.breadth)
             print("Depth of hidden layers:", m_state.depth)
             print("Learning Rate:", m_state.learning_rate)
@@ -336,32 +348,40 @@ class TestDeepLearning:
                     option := input(
                         """Choose an option
     0) Test
-    1) Linearity (0: False, 1: True)
-    2) Breadth of hidden layers
-    3) Depth of hidden layers
-    4) Learning Rate
-    5) Number of Epochs
-    6) Batch Size
-    7) Dropout Rate
-    8) Batch Normalization (0: False, 1: True)
+    1) Activation Function (0: nn.ReLU(), 1: nn.LeakyReLU(negative_slope=0.01), 2: nn.GELU(approximate="tanh"))
+    2) Linearity (0: False, 1: True)
+    3) Breadth of hidden layers
+    4) Depth of hidden layers
+    5) Learning Rate
+    6) Number of Epochs
+    7) Batch Size
+    8) Dropout Rate
+    9) Batch Normalization (0: False, 1: True)
     : """
                     )
                 )
-                not in ("0", "1", "2", "3", "4", "5", "6", "7", "8")
+                not in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
             ):
                 print("Invalid choice. Please try again.")
             print()
             if int(option):
                 set_val = input("Set value : ")
                 {
-                    "1": lambda: m_state.set_linear(bool(int(set_val))),
-                    "2": lambda: m_state.set_breadth(int(set_val)),
-                    "3": lambda: m_state.set_depth(int(set_val)),
-                    "4": lambda: m_state.set_lr(float(set_val)),
-                    "5": lambda: m_state.set_epochs(int(set_val)),
-                    "6": lambda: m_state.set_batch_size(int(set_val)),
-                    "7": lambda: m_state.set_dropout_rate(float(set_val)),
-                    "8": lambda: m_state.set_batch_norm(bool(int(set_val))),
+                    "1": lambda: m_state.set_activation(
+                        [
+                            nn.ReLU(),
+                            nn.LeakyReLU(negative_slope=0.01),
+                            nn.GELU(approximate="tanh"),
+                        ][int(set_val)]
+                    ),
+                    "2": lambda: m_state.set_linear(bool(int(set_val))),
+                    "3": lambda: m_state.set_breadth(int(set_val)),
+                    "4": lambda: m_state.set_depth(int(set_val)),
+                    "5": lambda: m_state.set_lr(float(set_val)),
+                    "6": lambda: m_state.set_epochs(int(set_val)),
+                    "7": lambda: m_state.set_batch_size(int(set_val)),
+                    "8": lambda: m_state.set_dropout_rate(float(set_val)),
+                    "9": lambda: m_state.set_batch_norm(bool(int(set_val))),
                 }.get(option, lambda: "Invalid.")()
                 continue
             model.eval()
