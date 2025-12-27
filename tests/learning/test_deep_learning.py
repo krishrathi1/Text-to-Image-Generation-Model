@@ -23,8 +23,8 @@ class TestDeepLearning:
         _linear = False
         _breadth = 10
         _depth = 0
-        _learning_rate = 0.01
-        _num_epochs = 100
+        _learning_rate = 0.001
+        _num_epochs = 1000
         _batch_size = 8
         _dropout_rate = 0.1
         _batch_norm = True
@@ -299,10 +299,21 @@ class TestDeepLearning:
             )
             model.train()
             """
-            weight_decay: hyperparameter (λ) to control L2 penalty
+            Adam combines momentum and RMSprop
+
+            w = w - lr/((s'+eps)^0.5) * v'
+            v' = v / (1-b1^t)
+            s' = s / (1-b2^t)
+            v = (1-b1)*dJ + b1*vt-1 (momentum)
+            s = (1-b2)*(dJ^2) + b2*st-1 (RMSprop)
+
+            Adam and RMSprop are robust to small learning rate compared to vanilla SGD
             """
-            optimizer = optim.SGD(
-                model.parameters(), lr=m_state.learning_rate, weight_decay=0.01
+            optimizer = optim.Adam(
+                model.parameters(),
+                lr=m_state.learning_rate,  # 0.001 recommended
+                betas=(0.9, 0.999),  # (b1, b2)
+                eps=1e-08,  # prevent s' being zero for numerical stability
             )
             print("\nActivation function:", m_state.activation)
             print("Linearity:", m_state.linear)
