@@ -24,10 +24,10 @@ class TestDeepLearning:
         _breadth = 10
         _depth = 0
         _learning_rate = 0.001
-        _num_epochs = 1000
+        _num_epochs = 100
         _batch_size = 8
         _dropout_rate = 0.1
-        _batch_norm = True
+        _batch_norm = False
 
         @property
         def activation(self):
@@ -270,11 +270,8 @@ class TestDeepLearning:
         output_size = 3
         m_state = self.ModelState()
         m_state.set_activation(nn.ReLU())
-        m_state.set_breadth(1)  # 1 -> 10
-        m_state.set_lr(0.0001)  # 0.0001 -> 0.01
-        m_state.set_epochs(10)  # 10 -> 100
-        m_state.set_dropout_rate(0.9)  # 0.9 -> 0.1
-        m_state.set_batch_norm(False)
+        m_state.set_breadth(10)
+        m_state.set_batch_size(8)
         """
         nn.CrossEntropyLoss: works with output_size >= 2 (Multiclass classification)
         """
@@ -314,6 +311,164 @@ class TestDeepLearning:
                 lr=m_state.learning_rate,  # 0.001 recommended
                 betas=(0.9, 0.999),  # (b1, b2)
                 eps=1e-08,  # prevent s' being zero for numerical stability
+            )
+            print("\nActivation function:", m_state.activation)
+            print("Linearity:", m_state.linear)
+            print("Breadth of hidden layers:", m_state.breadth)
+            print("Depth of hidden layers:", m_state.depth)
+            print("Learning Rate:", m_state.learning_rate)
+            print("Number of Epochs:", m_state.num_epochs)
+            print("Batch Size:", m_state.batch_size)
+            print("Dropout Rate:", m_state.dropout_rate)
+            print("Batch Normalization:", m_state.batch_norm, "\n")
+            softmax = nn.Softmax(dim=1)
+            for epoch_idx in range(m_state.num_epochs):
+                for x, y in train_loader:
+                    y_hat = model(x)  # forward pass
+                    epoch_loss = criterion(y_hat, y)  # compute loss
+                    optimizer.zero_grad()
+                    epoch_loss.backward()  # backprop
+                    optimizer.step()
+                    epoch_acc = 100 * torch.mean(
+                        (torch.argmax(y_hat, dim=1) == y).float()
+                    )
+                if (epoch_idx + 1) % (m_state.num_epochs // 10) == 0:
+                    print(
+                        f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Epoch Loss: {epoch_loss.item():.4f}, Epoch Accuracy: {epoch_acc}\n"
+                    )
+                    assert np.allclose(
+                        torch.sum(softmax(y_hat), dim=1).detach(), np.ones(len(y_hat))
+                    )
+            print()
+            model.eval()
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for x, y in devset_loader:
+                    y_hat = model(x)
+                    _, predicted = torch.max(y_hat.data, 1)
+                    total += y.size(0)
+                    correct += (predicted == y).sum().item()
+                accuracy = 100 * correct / total
+                print(f"Accuracy of the model on the devset data: {accuracy:.2f} %")
+            while (
+                (
+                    option := input(
+                        """Choose an option
+    0) Test
+    1) Activation Function (0: nn.ReLU(), 1: nn.LeakyReLU(negative_slope=0.01), 2: nn.GELU(approximate="tanh"))
+    2) Linearity (0: False, 1: True)
+    3) Breadth of hidden layers
+    4) Depth of hidden layers
+    5) Learning Rate
+    6) Number of Epochs
+    7) Batch Size
+    8) Dropout Rate
+    9) Batch Normalization (0: False, 1: True)
+    : """
+                    )
+                )
+                not in ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+            ):
+                print("Invalid choice. Please try again.")
+            print()
+            if int(option):
+                set_val = input("Set value : ")
+                {
+                    "1": lambda: m_state.set_activation(
+                        [
+                            nn.ReLU(),
+                            nn.LeakyReLU(negative_slope=0.01),
+                            nn.GELU(approximate="tanh"),
+                        ][int(set_val)]
+                    ),
+                    "2": lambda: m_state.set_linear(bool(int(set_val))),
+                    "3": lambda: m_state.set_breadth(int(set_val)),
+                    "4": lambda: m_state.set_depth(int(set_val)),
+                    "5": lambda: m_state.set_lr(float(set_val)),
+                    "6": lambda: m_state.set_epochs(int(set_val)),
+                    "7": lambda: m_state.set_batch_size(int(set_val)),
+                    "8": lambda: m_state.set_dropout_rate(float(set_val)),
+                    "9": lambda: m_state.set_batch_norm(bool(int(set_val))),
+                }.get(option, lambda: "Invalid.")()
+                continue
+            model.eval()
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for x, y in test_loader:
+                    y_hat = model(x)
+                    _, predicted = torch.max(y_hat.data, 1)
+                    total += y.size(0)
+                    correct += (predicted == y).sum().item()
+                accuracy = 100 * correct / total
+                print(f"Accuracy of the model on the test data: {accuracy:.2f} %")
+            break
+
+    # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_mnist_classification
+    def test_mnist_classification(self) -> None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "assets", "mnist_train_small.csv")
+        mnist_df = pd.read_csv(file_path, header=None)
+        x = torch.tensor(
+            mnist_df.iloc[:, 1:].values.reshape(
+                mnist_df.shape[0], mnist_df.shape[1] - 1
+            )
+        ).float()
+        y = torch.tensor(mnist_df.iloc[:, 0].values)
+        partitions = [0.8, 0.1, 0.1]
+        assert sum(partitions) == 1
+        x_train, x_temp, y_train, y_temp = train_test_split(
+            x, y, train_size=partitions[0], stratify=y
+        )
+        x_devset, x_test, y_devset, y_test = train_test_split(
+            x_temp,
+            y_temp,
+            test_size=partitions[2] / np.sum(partitions[1:]),
+            stratify=y_temp,
+        )
+        assert isinstance(x_train, torch.Tensor)
+        assert isinstance(y_train, torch.Tensor)
+        assert isinstance(x_devset, torch.Tensor)
+        assert isinstance(y_devset, torch.Tensor)
+        assert isinstance(x_test, torch.Tensor)
+        assert isinstance(y_test, torch.Tensor)
+        train_dataset = TensorDataset(x_train, y_train)
+        devset_dataset = TensorDataset(x_devset, y_devset)
+        test_dataset = TensorDataset(x_test, y_test)
+        devset_loader = DataLoader(devset_dataset, shuffle=False)
+        test_loader = DataLoader(test_dataset, shuffle=False)
+        input_size = mnist_df.shape[1] - 1
+        output_size = len(set(mnist_df.iloc[:, 0].values))
+        m_state = self.ModelState()
+        m_state.set_activation(nn.LeakyReLU(negative_slope=0.01))
+        m_state.set_breadth(60)
+        m_state.set_batch_size(64)
+        criterion = nn.CrossEntropyLoss()
+        print()
+        while True:
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=m_state.batch_size,
+                shuffle=True,
+                drop_last=True,
+            )
+            model = self.MLP(
+                m_state.activation,
+                input_size,
+                m_state.breadth,
+                output_size,
+                linear=m_state.linear,
+                depth=m_state.depth,
+                dropout_rate=m_state.dropout_rate,
+                batch_norm=m_state.batch_norm,
+            )
+            model.train()
+            optimizer = optim.Adam(
+                model.parameters(),
+                lr=m_state.learning_rate,
+                betas=(0.9, 0.999),
+                eps=1e-08,
             )
             print("\nActivation function:", m_state.activation)
             print("Linearity:", m_state.linear)
