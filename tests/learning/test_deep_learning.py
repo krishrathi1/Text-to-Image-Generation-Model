@@ -271,6 +271,7 @@ class TestDeepLearning:
         m_state = self.ModelState()
         m_state.set_activation(nn.ReLU())
         m_state.set_breadth(10)
+        m_state.set_depth(0)
         m_state.set_batch_size(8)
         """
         nn.CrossEntropyLoss: works with output_size >= 2 (Multiclass classification)
@@ -447,6 +448,7 @@ class TestDeepLearning:
         m_state = self.ModelState()
         m_state.set_activation(nn.LeakyReLU(negative_slope=0.01))
         m_state.set_breadth(60)
+        m_state.set_depth(3)
         m_state.set_batch_size(64)
         criterion = nn.CrossEntropyLoss()
         print()
