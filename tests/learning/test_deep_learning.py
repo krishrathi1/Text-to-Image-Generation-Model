@@ -415,6 +415,10 @@ class TestDeepLearning:
                 mnist_df.shape[0], mnist_df.shape[1] - 1
             )
         ).float()
+        """
+        min-max scaling: (feature - min) / (max - min)
+        """
+        x = x / torch.max(x)
         y = torch.tensor(mnist_df.iloc[:, 0].values)
         partitions = [0.8, 0.1, 0.1]
         assert sum(partitions) == 1
