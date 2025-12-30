@@ -21,7 +21,7 @@ class TestDeepLearning:
 
         _activation: nn.Module
         _linear = False
-        _breadth = 10
+        _breadth = 8
         _depth = 0
         _learning_rate = 0.001
         _num_epochs = 100
@@ -70,6 +70,9 @@ class TestDeepLearning:
 
         def set_breadth(self, breadth: int):
             assert breadth > 0, "_breadth must be positive"
+            assert (
+                breadth & (breadth - 1)
+            ) == 0, "_breadth is recommended to be power of two"
             self._breadth = breadth
 
         def set_depth(self, depth: int):
@@ -86,6 +89,9 @@ class TestDeepLearning:
 
         def set_batch_size(self, batch_size: int):
             assert batch_size > 0, "_batch_size must be positive"
+            assert (
+                batch_size & (batch_size - 1)
+            ) == 0, "_batch_size is recommended to be power of two"
             self._batch_size = batch_size
 
         def set_dropout_rate(self, dropout_rate: float):
@@ -270,7 +276,7 @@ class TestDeepLearning:
         output_size = 3
         m_state = self.ModelState()
         m_state.set_activation(nn.ReLU())
-        m_state.set_breadth(10)
+        m_state.set_breadth(8)
         m_state.set_depth(0)
         m_state.set_batch_size(8)
         """
@@ -447,7 +453,7 @@ class TestDeepLearning:
         output_size = len(set(mnist_df.iloc[:, 0].values))
         m_state = self.ModelState()
         m_state.set_activation(nn.LeakyReLU(negative_slope=0.01))
-        m_state.set_breadth(60)
+        m_state.set_breadth(64)
         m_state.set_depth(3)
         m_state.set_batch_size(64)
         criterion = nn.CrossEntropyLoss()
