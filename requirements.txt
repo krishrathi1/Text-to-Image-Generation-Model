@@ -4,3 +4,5 @@ pytest
 scikit-learn
 seaborn
 torch
+torchsummary
+torchvision
