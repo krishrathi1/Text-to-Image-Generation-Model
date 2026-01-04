@@ -228,9 +228,9 @@ class TestDeepLearning:
                     padding=ksp[2],
                 ),
                 # self._Debugger(),
+                activation,
                 nn.MaxPool2d(2),
                 # self._Debugger(),
-                activation,
                 *(
                     sum(
                         [
@@ -244,9 +244,9 @@ class TestDeepLearning:
                                         padding=ksp[2],
                                     ),
                                     # self._Debugger(),
+                                    activation,
                                     nn.MaxPool2d(2),
                                     # self._Debugger(),
-                                    activation,
                                 ]
                             )
                             for idx in range(len(breadth) - 1)
