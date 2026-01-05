@@ -210,6 +210,8 @@ class TestDeepLearning:
             output_size,
             ksp=(5, 1, 0),
             fc_breadth=50,
+            dropout_rate=0.0,
+            batch_norm=True,
         ) -> None:
             super().__init__()
             self._kernel_size = input_size[1]
@@ -228,6 +230,7 @@ class TestDeepLearning:
                     padding=ksp[2],
                 ),
                 # self._Debugger(),
+                (nn.BatchNorm2d(breadth[0]) if batch_norm else nn.Identity()),
                 activation,
                 nn.MaxPool2d(2),
                 # self._Debugger(),
@@ -244,6 +247,11 @@ class TestDeepLearning:
                                         padding=ksp[2],
                                     ),
                                     # self._Debugger(),
+                                    (
+                                        nn.BatchNorm2d(breadth[idx + 1])
+                                        if batch_norm
+                                        else nn.Identity()
+                                    ),
                                     activation,
                                     nn.MaxPool2d(2),
                                     # self._Debugger(),
@@ -260,7 +268,9 @@ class TestDeepLearning:
                     fc_breadth,
                     bias=True,
                 ),
+                (nn.BatchNorm1d(fc_breadth) if batch_norm else nn.Identity()),
                 activation,
+                nn.Dropout(dropout_rate),
                 nn.Linear(fc_breadth, output_size, bias=True),
                 # nn.Sigmoid(),  # nn.BCELoss
             )
@@ -885,6 +895,7 @@ class TestDeepLearning:
         m_state.set_activation(nn.ReLU())
         m_state.set_breadth((10, 20))
         m_state.set_batch_size(128)
+        m_state.set_batch_norm(True)
         m_state.set_ksp((5, 1, 1))
         criterion = nn.CrossEntropyLoss()
         print()
