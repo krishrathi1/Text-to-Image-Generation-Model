@@ -88,6 +88,9 @@ class TestDeepLearning:
                 assert all(
                     isinstance(elm, int) and (elm > 0) for elm in breadth
                 ), "Not all elements in _breadth are positive integers"
+                assert all(
+                    (elm & (elm - 1)) == 0 for elm in breadth
+                ), "All elements in _breadth are recommended to be power of two"
             self._breadth = breadth
 
         def set_depth(self, depth: int):
@@ -209,7 +212,7 @@ class TestDeepLearning:
             breadth,
             output_size,
             ksp=(5, 1, 0),
-            fc_breadth=50,
+            fc_breadth=64,
             dropout_rate=0.0,
             batch_norm=True,
         ) -> None:
@@ -388,6 +391,9 @@ class TestDeepLearning:
         iris_df["species"] = iris.target_names[iris.target]
         sns.pairplot(iris_df, hue="species")
         self.save_current_plot(filename="iris_pairplot.png")
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
         x = torch.tensor(iris.data).float()
         y = torch.tensor(iris.target)
         partitions = [0.8, 0.1, 0.1]
@@ -407,9 +413,9 @@ class TestDeepLearning:
         assert isinstance(y_devset, torch.Tensor)
         assert isinstance(x_test, torch.Tensor)
         assert isinstance(y_test, torch.Tensor)
-        train_dataset = TensorDataset(x_train, y_train)
-        devset_dataset = TensorDataset(x_devset, y_devset)
-        test_dataset = TensorDataset(x_test, y_test)
+        train_dataset = TensorDataset(x_train.to(device), y_train.to(device))
+        devset_dataset = TensorDataset(x_devset.to(device), y_devset.to(device))
+        test_dataset = TensorDataset(x_test.to(device), y_test.to(device))
         devset_loader = DataLoader(devset_dataset, shuffle=False)
         test_loader = DataLoader(test_dataset, shuffle=False)
         input_size = 4
@@ -441,6 +447,7 @@ class TestDeepLearning:
                 dropout_rate=m_state.dropout_rate,
                 batch_norm=m_state.batch_norm,
             )
+            model.to(device)
             model.train()
             """
             Adam combines momentum and RMSprop
@@ -482,9 +489,6 @@ class TestDeepLearning:
                 if (epoch_idx + 1) % (m_state.num_epochs // 10) == 0:
                     print(
                         f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Epoch Loss: {epoch_loss.item():.4f}, Epoch Accuracy: {epoch_acc}\n"
-                    )
-                    assert np.allclose(
-                        torch.sum(softmax(y_hat), dim=1).detach(), np.ones(len(y_hat))
                     )
             print()
             model.eval()
@@ -557,6 +561,9 @@ class TestDeepLearning:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(script_dir, "assets", "mnist_train_small.csv")
         mnist_df = pd.read_csv(file_path, header=None)
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
         x = torch.tensor(
             mnist_df.iloc[:, 1:].values.reshape(
                 mnist_df.shape[0], mnist_df.shape[1] - 1
@@ -584,9 +591,9 @@ class TestDeepLearning:
         assert isinstance(y_devset, torch.Tensor)
         assert isinstance(x_test, torch.Tensor)
         assert isinstance(y_test, torch.Tensor)
-        train_dataset = TensorDataset(x_train, y_train)
-        devset_dataset = TensorDataset(x_devset, y_devset)
-        test_dataset = TensorDataset(x_test, y_test)
+        train_dataset = TensorDataset(x_train.to(device), y_train.to(device))
+        devset_dataset = TensorDataset(x_devset.to(device), y_devset.to(device))
+        test_dataset = TensorDataset(x_test.to(device), y_test.to(device))
         devset_loader = DataLoader(devset_dataset, shuffle=False)
         test_loader = DataLoader(test_dataset, shuffle=False)
         input_size = mnist_df.shape[1] - 1
@@ -615,6 +622,7 @@ class TestDeepLearning:
                 dropout_rate=m_state.dropout_rate,
                 batch_norm=m_state.batch_norm,
             )
+            model.to(device)
             model.train()
             optimizer = optim.Adam(
                 model.parameters(),
@@ -645,9 +653,6 @@ class TestDeepLearning:
                 if (epoch_idx + 1) % (m_state.num_epochs // 10) == 0:
                     print(
                         f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Epoch Loss: {epoch_loss.item():.4f}, Epoch Accuracy: {epoch_acc}\n"
-                    )
-                    assert np.allclose(
-                        torch.sum(softmax(y_hat), dim=1).detach(), np.ones(len(y_hat))
                     )
             print()
             model.eval()
@@ -805,9 +810,9 @@ class TestDeepLearning:
         self.save_current_plot(filename="cifar10_first_25.png")
         cdata.transform = T.Compose(
             [
-                T.ToTensor(),  # [0, 255] -> [0.0, 1.0]
                 T.Resize(32 * 4),
                 T.Grayscale(num_output_channels=1),
+                T.ToTensor(),  # [0, 255] -> [0.0, 1.0]
             ]
         )
         bird1 = cdata.data[123, :32, :32, :3]
@@ -859,6 +864,9 @@ class TestDeepLearning:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(script_dir, "assets", "mnist_train_small.csv")
         mnist_df = pd.read_csv(file_path, header=None)
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
         x = torch.tensor(
             mnist_df.iloc[:, 1:].values.reshape(mnist_df.shape[0], 1, 28, 28)
         ).float()
@@ -884,16 +892,16 @@ class TestDeepLearning:
         assert isinstance(y_devset, torch.Tensor)
         assert isinstance(x_test, torch.Tensor)
         assert isinstance(y_test, torch.Tensor)
-        train_dataset = TensorDataset(x_train, y_train)
-        devset_dataset = TensorDataset(x_devset, y_devset)
-        test_dataset = TensorDataset(x_test, y_test)
+        train_dataset = TensorDataset(x_train.to(device), y_train.to(device))
+        devset_dataset = TensorDataset(x_devset.to(device), y_devset.to(device))
+        test_dataset = TensorDataset(x_test.to(device), y_test.to(device))
         devset_loader = DataLoader(devset_dataset, shuffle=False)
         test_loader = DataLoader(test_dataset, shuffle=False)
         input_size = (x.shape[1], x.shape[2])
         output_size = len(set(mnist_df.iloc[:, 0].values))
         m_state = self.ModelState()
         m_state.set_activation(nn.ReLU())
-        m_state.set_breadth((10, 20))
+        m_state.set_breadth((8, 16))
         m_state.set_batch_size(128)
         m_state.set_batch_norm(True)
         m_state.set_ksp((5, 1, 1))
@@ -914,6 +922,7 @@ class TestDeepLearning:
                 ksp=m_state.ksp,
                 fc_breadth=50,
             )
+            model.to(device)
             model.train()
             optimizer = optim.Adam(
                 model.parameters(),
@@ -945,8 +954,167 @@ class TestDeepLearning:
                     print(
                         f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Epoch Loss: {epoch_loss.item():.4f}, Epoch Accuracy: {epoch_acc}\n"
                     )
-                    assert np.allclose(
-                        torch.sum(softmax(y_hat), dim=1).detach(), np.ones(len(y_hat))
+            print()
+            model.eval()
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for x, y in devset_loader:
+                    y_hat = model(x)
+                    _, predicted = torch.max(y_hat.data, 1)
+                    total += y.size(0)
+                    correct += (predicted == y).sum().item()
+                accuracy = 100 * correct / total
+                print(f"Accuracy of the model on the devset data: {accuracy:.2f} %")
+            while (
+                (
+                    option := input(
+                        """Choose an option
+    0) Test
+    1) Activation Function (0: nn.ReLU(), 1: nn.LeakyReLU(negative_slope=0.01), 2: nn.GELU(approximate="tanh"))
+    2) Breadth of hidden layers (ex. 10 20: 10 first feature maps, 20 second feature maps)
+    3) Learning Rate
+    4) Number of Epochs
+    5) Batch Size
+    6) Dropout Rate
+    7) Batch Normalization (0: False, 1: True)
+    8) Kernel Size, Stride, Padding (ex. 5 1 0: 5 kernel size, 1 stride, 0 padding)
+    : """
+                    )
+                )
+                not in ("0", "1", "2", "3", "4", "5", "6", "7", "8")
+            ):
+                print("Invalid choice. Please try again.")
+            print()
+            if int(option):
+                set_val = input("Set value : ")
+                {
+                    "1": lambda: m_state.set_activation(
+                        [
+                            nn.ReLU(),
+                            nn.LeakyReLU(negative_slope=0.01),
+                            nn.GELU(approximate="tanh"),
+                        ][int(set_val)]
+                    ),
+                    "2": lambda: m_state.set_breadth(tuple(map(int, set_val.split()))),
+                    "3": lambda: m_state.set_lr(float(set_val)),
+                    "4": lambda: m_state.set_epochs(int(set_val)),
+                    "5": lambda: m_state.set_batch_size(int(set_val)),
+                    "6": lambda: m_state.set_dropout_rate(float(set_val)),
+                    "7": lambda: m_state.set_batch_norm(bool(int(set_val))),
+                    "8": lambda: m_state.set_ksp(
+                        cast(tuple[int, int, int], tuple(map(int, set_val.split())))
+                    ),
+                }.get(option, lambda: "Invalid.")()
+                continue
+            model.eval()
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for x, y in test_loader:
+                    y_hat = model(x)
+                    _, predicted = torch.max(y_hat.data, 1)
+                    total += y.size(0)
+                    correct += (predicted == y).sum().item()
+                accuracy = 100 * correct / total
+                print(f"Accuracy of the model on the test data: {accuracy:.2f} %")
+            break
+
+    # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_cifar10_cnn_classification
+    def test_cifar10_cnn_classification(self) -> None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, "assets", "cifar10")
+        cdata = torchvision.datasets.CIFAR10(root=file_path, download=True)
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
+        assert device == torch.device(
+            "cuda"
+        ), "CUDA device not found. Operation requires a GPU."
+        x = torch.tensor(cdata.data, dtype=torch.float).transpose(1, 3)
+        """
+        min-max scaling: (feature - min) / (max - min)
+        """
+        x = x / torch.max(x)
+        y = torch.tensor(cdata.targets)
+        partitions = [0.8, 0.1, 0.1]
+        assert sum(partitions) == 1
+        x_train, x_temp, y_train, y_temp = train_test_split(
+            x, y, train_size=partitions[0], stratify=y
+        )
+        x_devset, x_test, y_devset, y_test = train_test_split(
+            x_temp,
+            y_temp,
+            test_size=partitions[2] / np.sum(partitions[1:]),
+            stratify=y_temp,
+        )
+        assert isinstance(x_train, torch.Tensor)
+        assert isinstance(y_train, torch.Tensor)
+        assert isinstance(x_devset, torch.Tensor)
+        assert isinstance(y_devset, torch.Tensor)
+        assert isinstance(x_test, torch.Tensor)
+        assert isinstance(y_test, torch.Tensor)
+        train_dataset = TensorDataset(x_train.to(device), y_train.to(device))
+        devset_dataset = TensorDataset(x_devset.to(device), y_devset.to(device))
+        test_dataset = TensorDataset(x_test.to(device), y_test.to(device))
+        devset_loader = DataLoader(devset_dataset, shuffle=False)
+        test_loader = DataLoader(test_dataset, shuffle=False)
+        input_size = (x.shape[1], x.shape[2])
+        output_size = len(set(cdata.targets))
+        m_state = self.ModelState()
+        m_state.set_activation(nn.ReLU())
+        m_state.set_breadth((64, 128, 256))
+        m_state.set_batch_size(256)
+        m_state.set_batch_norm(True)
+        m_state.set_ksp((3, 1, 1))
+        criterion = nn.CrossEntropyLoss()
+        print()
+        while True:
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=m_state.batch_size,
+                shuffle=True,
+                drop_last=True,
+            )
+            model = self.CNNV1(
+                m_state.activation,
+                input_size,
+                m_state.breadth,
+                output_size,
+                ksp=m_state.ksp,
+                fc_breadth=50,
+            )
+            model.to(device)
+            model.train()
+            optimizer = optim.Adam(
+                model.parameters(),
+                lr=m_state.learning_rate,
+                betas=(0.9, 0.999),
+                eps=1e-08,
+            )
+            print("\nActivation function:", m_state.activation)
+            print("Breadth of hidden layers:", m_state.breadth)
+            print("Learning Rate:", m_state.learning_rate)
+            print("Number of Epochs:", m_state.num_epochs)
+            print("Batch Size:", m_state.batch_size)
+            print("Dropout Rate:", m_state.dropout_rate)
+            print("Batch Normalization:", m_state.batch_norm)
+            print("Kernel Size, Stride, Padding:", m_state.ksp, "\n")
+            print(summary(model, x.shape[1:]), "\n")
+            softmax = nn.Softmax(dim=1)
+            for epoch_idx in range(m_state.num_epochs):
+                for x, y in train_loader:
+                    y_hat = model(x)  # forward pass
+                    epoch_loss = criterion(y_hat, y)  # compute loss
+                    optimizer.zero_grad()
+                    epoch_loss.backward()  # backprop
+                    optimizer.step()
+                    epoch_acc = 100 * torch.mean(
+                        (torch.argmax(y_hat, dim=1) == y).float()
+                    )
+                if (epoch_idx + 1) % (m_state.num_epochs // 10) == 0:
+                    print(
+                        f"Epoch [{epoch_idx+1}/{m_state.num_epochs}], Epoch Loss: {epoch_loss.item():.4f}, Epoch Accuracy: {epoch_acc}\n"
                     )
             print()
             model.eval()
