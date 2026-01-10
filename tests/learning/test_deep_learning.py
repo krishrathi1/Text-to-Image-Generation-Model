@@ -16,6 +16,7 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from torchsummary import summary
+from torchvision.models import vgg19, VGG19_Weights
 from typing import cast
 
 
@@ -315,6 +316,32 @@ class TestDeepLearning:
         if close:
             plt.close()
         return save_path
+
+    @staticmethod
+    def extract_features(
+        x: torch.Tensor, model_features: nn.Module, layers: list, verbose=False
+    ) -> dict[str, torch.Tensor]:
+        features = {}
+        for name, layer in model_features._modules.items():
+            if isinstance(layer, nn.Module):
+                x = layer(x)
+                if verbose and isinstance(layer, nn.Conv2d):
+                    print(f"Name: {name}, Layer: {layer}")
+                if name in layers:
+                    features[name] = x
+        return features
+
+    @staticmethod
+    def gram_matrix(mat: torch.Tensor) -> torch.Tensor:
+        _, num_featmaps, height, width = mat.shape
+        mat = mat.view(num_featmaps, height * width)
+        return mat @ mat.t() / (num_featmaps * height * width)
+
+    @staticmethod
+    def total_variation_loss(x: torch.Tensor) -> torch.Tensor:
+        return torch.sum(torch.abs(x[:, :, :, :-1] - x[:, :, :, 1:])) + torch.sum(
+            torch.abs(x[:, :, :-1, :] - x[:, :, 1:, :])
+        )
 
     # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_softmax_numpy
     def test_softmax_numpy(self) -> None:
@@ -1181,3 +1208,193 @@ class TestDeepLearning:
                 accuracy = 100 * correct / total
                 print(f"Accuracy of the model on the test data: {accuracy:.2f} %")
             break
+
+    # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_image_neural_style_transfer_via_vgg19
+    def test_image_neural_style_transfer_via_vgg19(self) -> None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(
+            script_dir,
+            "assets",
+            "cafe_rooted.jpeg",
+        )
+        content_img = mpimg.imread(file_path)
+        file_path = os.path.join(
+            script_dir,
+            "assets",
+            "1000_Three_domes_of_Oia_in_Santorini_Photo_by_Giles_Laurent.jpg",
+        )
+        style_img = mpimg.imread(file_path)
+        """
+        target_img = np.random.randint(
+            low=0, high=255, size=content_img.shape, dtype=np.uint8
+        )
+        """
+        target_img = np.copy(content_img)
+        print("\ncontent image (before):", content_img.shape, content_img.dtype)
+        print("style image (before):", style_img.shape, style_img.dtype)
+        print("target image (before):", target_img.shape, target_img.dtype)
+        device = (
+            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        )
+        assert device == torch.device(
+            "cuda"
+        ), "CUDA device not found. Operation requires a GPU."
+        weights = VGG19_Weights.DEFAULT
+        model_features = vgg19(weights=weights).features.to(device).eval()
+        """
+        weight freezing
+        """
+        for p in model_features.parameters():
+            p.requires_grad = False
+        """
+        imgtrans = T.Compose([T.ToPILImage(), weights.transforms()])
+        imgtrans = T.Compose(
+            [
+                T.ToPILImage(),
+                T.Resize(256),
+                T.CenterCrop(224),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+        """
+        imgtrans = T.Compose(
+            [
+                T.ToPILImage(),
+                T.Resize(256),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+        content_img = imgtrans(content_img)
+        assert isinstance(content_img, torch.Tensor)
+        content_img = content_img.unsqueeze(0).to(device)
+        style_img = imgtrans(style_img)
+        assert isinstance(style_img, torch.Tensor)
+        style_img = style_img.unsqueeze(0).to(device)
+        target_img = imgtrans(target_img)
+        assert isinstance(target_img, torch.Tensor)
+        target_img = target_img.unsqueeze(0).to(device)
+        print("\ncontent image (after):", content_img.shape, content_img.dtype)
+        print("style image (after):", style_img.shape, style_img.dtype)
+        print("target image (after):", target_img.shape, target_img.dtype)
+        print()
+        self.extract_features(target_img, model_features, [], verbose=True)
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+        pic = content_img.cpu().squeeze().numpy().transpose((1, 2, 0))
+        pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+        axes[0].imshow(pic)
+        axes[0].set_title("Content picture")
+        pic = style_img.cpu().squeeze().numpy().transpose((1, 2, 0))
+        pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+        axes[1].imshow(pic)
+        axes[1].set_title("Style picture")
+        pic = target_img.cpu().squeeze().numpy().transpose((1, 2, 0))
+        pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+        axes[2].imshow(pic)
+        axes[2].set_title("Target picture")
+        plt.tight_layout()
+        plt.show()
+        self.save_current_plot(filename="style_transfer_before.png")
+        print()
+        content_feature_dict = self.extract_features(
+            content_img, model_features, ["0", "2", "5", "7", "10"]
+        )
+        content_feature_names = list(content_feature_dict.keys())
+        content_feature_maps = list(content_feature_dict.values())
+        fig, axes = plt.subplots(2, 5, figsize=(18, 6))
+        for i in range(5):
+            pic = np.mean(content_feature_maps[i].cpu().squeeze().numpy(), axis=0)
+            pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+            axes[0, i].imshow(pic, cmap="gray")
+            axes[0, i].set_title("Content layer " + str(content_feature_names[i]))
+            pic = self.gram_matrix(content_feature_maps[i]).cpu().numpy()
+            pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+            axes[1, i].imshow(pic, cmap="gray", vmax=0.1)
+            axes[1, i].set_title("Gram matrix, layer " + str(content_feature_names[i]))
+        plt.tight_layout()
+        plt.show()
+        self.save_current_plot(filename="content_feature_maps.png")
+        style_feature_dict = self.extract_features(
+            style_img, model_features, ["0", "2", "5", "7", "10"]
+        )
+        style_feature_names = list(style_feature_dict.keys())
+        style_feature_maps = list(style_feature_dict.values())
+        fig, axes = plt.subplots(2, 5, figsize=(18, 6))
+        for i in range(5):
+            pic = np.mean(style_feature_maps[i].cpu().squeeze().numpy(), axis=0)
+            pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+            axes[0, i].imshow(pic, cmap="gray")
+            axes[0, i].set_title("Style layer " + str(style_feature_names[i]))
+            pic = self.gram_matrix(style_feature_maps[i]).cpu().numpy()
+            pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+            axes[1, i].imshow(pic, cmap="gray", vmax=0.1)
+            axes[1, i].set_title("Gram matrix, layer " + str(style_feature_names[i]))
+        plt.tight_layout()
+        plt.show()
+        self.save_current_plot(filename="style_feature_maps.png")
+        content_layers = ["0"]
+        content_feature_dict = self.extract_features(
+            content_img, model_features, content_layers
+        )
+        style_layers = ["0", "5", "10", "19"]
+        style_feature_dict = self.extract_features(
+            style_img, model_features, style_layers
+        )
+        target_img = target_img.requires_grad_(True)
+        optimizer = optim.Adam([target_img], lr=0.01)
+        content_weight = 1e4
+        style_weight = 1e6
+        tv_weight = 1e-5
+        num_epochs = 1500
+        for epoch_idx in range(num_epochs):
+            target_feature_dict = self.extract_features(
+                target_img, model_features, list(model_features._modules.keys())
+            )
+            content_loss = 0
+            style_loss = 0
+            for layer_name in target_feature_dict.keys():
+                if layer_name in content_layers:
+                    content_loss += torch.mean(
+                        (
+                            target_feature_dict[layer_name]
+                            - content_feature_dict[layer_name]
+                        )
+                        ** 2
+                    )
+                if layer_name in style_layers:
+                    style_loss += torch.mean(
+                        (
+                            self.gram_matrix(target_feature_dict[layer_name])
+                            - self.gram_matrix(style_feature_dict[layer_name])
+                        )
+                        ** 2
+                    )
+            total_loss = (
+                content_weight * content_loss
+                + style_weight * style_loss
+                + tv_weight * self.total_variation_loss(target_img)
+            )
+            optimizer.zero_grad()
+            total_loss.backward()
+            optimizer.step()
+            with torch.no_grad():
+                target_img.clamp_(0, 1)
+            if epoch_idx % 100 == 0:
+                print(f"Epoch {epoch_idx} | Total loss: {total_loss.item():.2f}")
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+        pic = content_img.cpu().squeeze().numpy().transpose((1, 2, 0))
+        pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+        axes[0].imshow(pic)
+        axes[0].set_title("Content picture")
+        pic = style_img.cpu().squeeze().numpy().transpose((1, 2, 0))
+        pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+        axes[1].imshow(pic)
+        axes[1].set_title("Style picture")
+        pic = target_img.detach().cpu().squeeze().numpy().transpose((1, 2, 0))
+        pic = (pic - np.min(pic)) / (np.max(pic) - np.min(pic))
+        axes[2].imshow(pic)
+        axes[2].set_title("Target picture")
+        plt.tight_layout()
+        plt.show()
+        self.save_current_plot(filename="style_transfer_after.png")
