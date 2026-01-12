@@ -306,6 +306,35 @@ class TestDeepLearning:
         def __len__(self) -> int:
             return self._inputs.shape[0]
 
+    class RNNV1(nn.Module):
+
+        class _Debugger(nn.Module):
+
+            def forward(self, x, name: str):
+                print(f"{name}: {tuple(x.shape)}")
+                return x
+
+        _debugger: _Debugger
+        _rnn: nn.RNN
+        _init_hidden: torch.Tensor
+        _fc: nn.Linear
+
+        def __init__(self, input_size, breadth, output_size, depth, batch_size) -> None:
+            super().__init__()
+            self._debugger = self._Debugger()
+            self._rnn = nn.RNN(input_size, breadth, depth)
+            self._init_hidden = torch.zeros(depth, batch_size, breadth)
+            self._fc = nn.Linear(breadth, output_size)
+
+        def forward(self, x) -> tuple[torch.Tensor, torch.Tensor]:
+            self._debugger(x, "Input")
+            out, hidden = self._rnn(x, self._init_hidden)
+            self._debugger(out, "RNN-out")
+            self._debugger(hidden, "RNN-hidden")
+            out = self._fc(out)
+            self._debugger(out, "Output")
+            return out, hidden
+
     @staticmethod
     def save_current_plot(filename: str, folder="outputs", close=True) -> str:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1109,7 +1138,7 @@ class TestDeepLearning:
                 m_state.breadth,
                 output_size,
                 ksp=m_state.ksp,
-                fc_breadth=50,
+                fc_breadth=64,
             )
             model.to(device)
             model.train()
@@ -1398,3 +1427,20 @@ class TestDeepLearning:
         plt.tight_layout()
         plt.show()
         self.save_current_plot(filename="style_transfer_after.png")
+
+    # pytest -sv tests/learning/test_deep_learning.py::TestDeepLearning::test_RNNV1
+    def test_RNNV1(self) -> None:
+        input_size = 9
+        output_size = 1
+        m_state = self.ModelState()
+        # m_state.set_activation(nn.Tanh())
+        m_state.set_breadth(16)
+        m_state.set_depth(1)
+        m_state.set_batch_size(2)
+        seq_len = 5
+        model = self.RNNV1(
+            input_size, m_state.breadth, output_size, m_state.depth, m_state.batch_size
+        )
+        print()
+        x = torch.rand(seq_len, m_state.batch_size, input_size)
+        y_hat, hidden = model(x)
