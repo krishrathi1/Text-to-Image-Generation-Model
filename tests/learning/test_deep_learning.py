@@ -322,7 +322,7 @@ class TestDeepLearning:
         def __init__(self, input_size, breadth, output_size, depth, batch_size) -> None:
             super().__init__()
             self._debugger = self._Debugger()
-            self._rnn = nn.RNN(input_size, breadth, depth)
+            self._rnn = nn.RNN(input_size, breadth, depth, batch_first=True)
             self._init_hidden = torch.zeros(depth, batch_size, breadth)
             self._fc = nn.Linear(breadth, output_size)
 
@@ -1442,5 +1442,5 @@ class TestDeepLearning:
             input_size, m_state.breadth, output_size, m_state.depth, m_state.batch_size
         )
         print()
-        x = torch.rand(seq_len, m_state.batch_size, input_size)
+        x = torch.rand(m_state.batch_size, seq_len, input_size)
         y_hat, hidden = model(x)
