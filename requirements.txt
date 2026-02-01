@@ -6,3 +6,8 @@ seaborn
 torch
 torchsummary
 torchvision
+transformers==4.57.6
+diffusers
+accelerate
+pathlib
+datasets
