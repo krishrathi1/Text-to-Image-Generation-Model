@@ -203,7 +203,7 @@ unet-train > log.txt
 unet-train --epochs 100 > second_log.txt
 
 generate-image A man with glasses and a beard
-generate-image A man with glasses and a beard --step 50
+generate-image A man with glasses and a beard --steps 50
 generate-image "A man with glasses and a beard" --model celeba_unet_1e_4_16_100.pt
 """
 if __name__ == "__main__":
