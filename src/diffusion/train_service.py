@@ -3,7 +3,7 @@ import torchvision.transforms as T
 
 from pathlib import Path
 from torch.utils.data import DataLoader
-from .datasets.caption_dataset import CaptionDataset
+from .config import Config
 from .stable_diffusion_trainer import StableDiffusionTrainer
 
 
@@ -22,7 +22,7 @@ class TrainService:
     ) -> None:
         print(f"Batch Size: {batch_size}")
         print(f"Number of epochs: {num_epochs}")
-        dataset = CaptionDataset(x0, transform)
+        dataset = Config.ts_dataset(x0, transform)
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
