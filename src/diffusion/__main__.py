@@ -112,7 +112,21 @@ class Main:
             epilog="""
         Examples:
         generate-image "A man with glasses and a beard"
-        generate-image A man with glasses and a beard --steps 50
+        generate-image A woman with glasses
+        generate-image A woman with long blonde hair
+        generate-image "A person smiling"
+        generate-image "A woman with dark hair"
+        generate-image "A young woman"
+        generate-image "A woman with long hair and glasses"
+        generate-image "A man with short hair and glasses"
+        generate-image "A man with glasses and a beard" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A woman with glasses" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A woman with long blonde hair" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A person smiling" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A woman with dark hair" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A young woman" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A woman with long hair and glasses" --model celeba_unet_1e_4_16_100.pt
+        generate-image "A man with short hair and glasses" --model celeba_unet_1e_4_16_100.pt
         """,
         )
         parser.add_argument(
@@ -189,7 +203,8 @@ unet-train > log.txt
 unet-train --epochs 100 > second_log.txt
 
 generate-image A man with glasses and a beard
-generate-image A man with glasses and a beard --steps 50
+generate-image A man with glasses and a beard --step 50
+generate-image "A man with glasses and a beard" --model celeba_unet_1e_4_16_100.pt
 """
 if __name__ == "__main__":
     pass

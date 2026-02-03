@@ -1,0 +1,151 @@
+Start Time = 07:23:34
+Using device: cuda
+
+==================================================
+TRAINING EXAMPLE - UNet from Scratch
+==================================================
+Loading pre-trained CLIP and VAE...
+✓ CLIP: Pre-trained (frozen)
+✓ VAE: Pre-trained (frozen)
+✓ UNet: Random initialization (trainable)
+Processed 1000/28000
+Processed 2000/28000
+Processed 3000/28000
+Processed 4000/28000
+Processed 5000/28000
+Processed 6000/28000
+Processed 7000/28000
+Processed 8000/28000
+Processed 9000/28000
+Processed 10000/28000
+Processed 11000/28000
+Processed 12000/28000
+Processed 13000/28000
+Processed 14000/28000
+Processed 15000/28000
+Processed 16000/28000
+Processed 17000/28000
+Processed 18000/28000
+Processed 19000/28000
+Processed 20000/28000
+Processed 21000/28000
+Processed 22000/28000
+Processed 23000/28000
+Processed 24000/28000
+Processed 25000/28000
+Processed 26000/28000
+Processed 27000/28000
+Processed 28000/28000
+Batch Size: 16
+Number of epochs: 100
+Initializing captioner...
+Generating captions for 28000 images...
+  Generated 4000/28000 captions
+  Generated 8000/28000 captions
+  Generated 12000/28000 captions
+  Generated 16000/28000 captions
+  Generated 20000/28000 captions
+  Generated 24000/28000 captions
+  Generated 28000/28000 captions
+✓ Caption generation complete!
+Epoch 1/100, Average Loss: 0.0665, LR: 0.000100
+Epoch 2/100, Average Loss: 0.0499, LR: 0.000100
+Epoch 3/100, Average Loss: 0.0478, LR: 0.000100
+Epoch 4/100, Average Loss: 0.0473, LR: 0.000100
+Epoch 5/100, Average Loss: 0.0466, LR: 0.000099
+Epoch 6/100, Average Loss: 0.0468, LR: 0.000099
+Epoch 7/100, Average Loss: 0.0460, LR: 0.000099
+Epoch 8/100, Average Loss: 0.0438, LR: 0.000098
+Epoch 9/100, Average Loss: 0.0457, LR: 0.000098
+Epoch 10/100, Average Loss: 0.0448, LR: 0.000098
+Epoch 11/100, Average Loss: 0.0451, LR: 0.000097
+Epoch 12/100, Average Loss: 0.0443, LR: 0.000096
+Epoch 13/100, Average Loss: 0.0452, LR: 0.000096
+Epoch 14/100, Average Loss: 0.0441, LR: 0.000095
+Epoch 15/100, Average Loss: 0.0440, LR: 0.000095
+Epoch 16/100, Average Loss: 0.0429, LR: 0.000094
+Epoch 17/100, Average Loss: 0.0424, LR: 0.000093
+Epoch 18/100, Average Loss: 0.0427, LR: 0.000092
+Epoch 19/100, Average Loss: 0.0443, LR: 0.000091
+Epoch 20/100, Average Loss: 0.0430, LR: 0.000090
+Epoch 21/100, Average Loss: 0.0436, LR: 0.000090
+Epoch 22/100, Average Loss: 0.0429, LR: 0.000089
+Epoch 23/100, Average Loss: 0.0428, LR: 0.000088
+Epoch 24/100, Average Loss: 0.0432, LR: 0.000086
+Epoch 25/100, Average Loss: 0.0422, LR: 0.000085
+Epoch 26/100, Average Loss: 0.0416, LR: 0.000084
+Epoch 27/100, Average Loss: 0.0428, LR: 0.000083
+Epoch 28/100, Average Loss: 0.0426, LR: 0.000082
+Epoch 29/100, Average Loss: 0.0417, LR: 0.000081
+Epoch 30/100, Average Loss: 0.0420, LR: 0.000079
+Epoch 31/100, Average Loss: 0.0427, LR: 0.000078
+Epoch 32/100, Average Loss: 0.0419, LR: 0.000077
+Epoch 33/100, Average Loss: 0.0411, LR: 0.000075
+Epoch 34/100, Average Loss: 0.0421, LR: 0.000074
+Epoch 35/100, Average Loss: 0.0417, LR: 0.000073
+Epoch 36/100, Average Loss: 0.0421, LR: 0.000071
+Epoch 37/100, Average Loss: 0.0429, LR: 0.000070
+Epoch 38/100, Average Loss: 0.0424, LR: 0.000068
+Epoch 39/100, Average Loss: 0.0421, LR: 0.000067
+Epoch 40/100, Average Loss: 0.0420, LR: 0.000065
+Epoch 41/100, Average Loss: 0.0415, LR: 0.000064
+Epoch 42/100, Average Loss: 0.0415, LR: 0.000062
+Epoch 43/100, Average Loss: 0.0416, LR: 0.000061
+Epoch 44/100, Average Loss: 0.0410, LR: 0.000059
+Epoch 45/100, Average Loss: 0.0413, LR: 0.000058
+Epoch 46/100, Average Loss: 0.0421, LR: 0.000056
+Epoch 47/100, Average Loss: 0.0419, LR: 0.000055
+Epoch 48/100, Average Loss: 0.0415, LR: 0.000053
+Epoch 49/100, Average Loss: 0.0414, LR: 0.000052
+Epoch 50/100, Average Loss: 0.0409, LR: 0.000050
+Epoch 51/100, Average Loss: 0.0413, LR: 0.000048
+Epoch 52/100, Average Loss: 0.0406, LR: 0.000047
+Epoch 53/100, Average Loss: 0.0402, LR: 0.000045
+Epoch 54/100, Average Loss: 0.0411, LR: 0.000044
+Epoch 55/100, Average Loss: 0.0411, LR: 0.000042
+Epoch 56/100, Average Loss: 0.0405, LR: 0.000041
+Epoch 57/100, Average Loss: 0.0405, LR: 0.000039
+Epoch 58/100, Average Loss: 0.0404, LR: 0.000038
+Epoch 59/100, Average Loss: 0.0415, LR: 0.000036
+Epoch 60/100, Average Loss: 0.0407, LR: 0.000035
+Epoch 61/100, Average Loss: 0.0401, LR: 0.000033
+Epoch 62/100, Average Loss: 0.0403, LR: 0.000032
+Epoch 63/100, Average Loss: 0.0401, LR: 0.000030
+Epoch 64/100, Average Loss: 0.0406, LR: 0.000029
+Epoch 65/100, Average Loss: 0.0401, LR: 0.000027
+Epoch 66/100, Average Loss: 0.0409, LR: 0.000026
+Epoch 67/100, Average Loss: 0.0397, LR: 0.000025
+Epoch 68/100, Average Loss: 0.0404, LR: 0.000023
+Epoch 69/100, Average Loss: 0.0395, LR: 0.000022
+Epoch 70/100, Average Loss: 0.0398, LR: 0.000021
+Epoch 71/100, Average Loss: 0.0396, LR: 0.000019
+Epoch 72/100, Average Loss: 0.0400, LR: 0.000018
+Epoch 73/100, Average Loss: 0.0407, LR: 0.000017
+Epoch 74/100, Average Loss: 0.0401, LR: 0.000016
+Epoch 75/100, Average Loss: 0.0402, LR: 0.000015
+Epoch 76/100, Average Loss: 0.0394, LR: 0.000014
+Epoch 77/100, Average Loss: 0.0401, LR: 0.000012
+Epoch 78/100, Average Loss: 0.0407, LR: 0.000011
+Epoch 79/100, Average Loss: 0.0397, LR: 0.000010
+Epoch 80/100, Average Loss: 0.0400, LR: 0.000010
+Epoch 81/100, Average Loss: 0.0405, LR: 0.000009
+Epoch 82/100, Average Loss: 0.0389, LR: 0.000008
+Epoch 83/100, Average Loss: 0.0394, LR: 0.000007
+Epoch 84/100, Average Loss: 0.0395, LR: 0.000006
+Epoch 85/100, Average Loss: 0.0394, LR: 0.000005
+Epoch 86/100, Average Loss: 0.0398, LR: 0.000005
+Epoch 87/100, Average Loss: 0.0394, LR: 0.000004
+Epoch 88/100, Average Loss: 0.0390, LR: 0.000004
+Epoch 89/100, Average Loss: 0.0399, LR: 0.000003
+Epoch 90/100, Average Loss: 0.0406, LR: 0.000002
+Epoch 91/100, Average Loss: 0.0393, LR: 0.000002
+Epoch 92/100, Average Loss: 0.0401, LR: 0.000002
+Epoch 93/100, Average Loss: 0.0383, LR: 0.000001
+Epoch 94/100, Average Loss: 0.0389, LR: 0.000001
+Epoch 95/100, Average Loss: 0.0394, LR: 0.000001
+Epoch 96/100, Average Loss: 0.0399, LR: 0.000000
+Epoch 97/100, Average Loss: 0.0397, LR: 0.000000
+Epoch 98/100, Average Loss: 0.0398, LR: 0.000000
+Epoch 99/100, Average Loss: 0.0387, LR: 0.000000
+Epoch 100/100, Average Loss: 0.0392, LR: 0.000000
+End Time = 20:41:31
