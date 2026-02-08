@@ -40,14 +40,14 @@ class StableDiffusionTrainer:
         Single training step for the UNet
 
         Training objective (DDPM):
-        L = E_{x0, eps, t} [||eps - eps_theta(xt, t, c)||^2]
+        L = E_{z0, eps, t} [||eps - eps_theta(zt, t, c)||^2]
 
         where:
-        - x0: clean image (from VAE encoding)
+        - z0: clean latent (from VAE encoding)
         - eps: random noise ~ N(0, I)
         - t: random timestep
         - c: text condition (from CLIP)
-        - xt: noisy image at timestep t
+        - zt: noisy latent at timestep t
         - eps_theta: UNet prediction
 
         Process:
