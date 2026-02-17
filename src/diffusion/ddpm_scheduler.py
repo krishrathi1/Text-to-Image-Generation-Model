@@ -59,7 +59,7 @@ class DDPMScheduler:
 
         Given zt and predicted noise eps_theta(zt, t), compute z_{t-1}
 
-        Step 0: Predict z0 from zt
+        Predict z0 from zt
         z0_hat = (zt - √(1 - alpha_bar_t) * eps_theta) / √(alpha_bar_t)
 
         Bayes' rule
