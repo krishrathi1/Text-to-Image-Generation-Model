@@ -164,7 +164,9 @@ All images below were generated with `num_steps=30` and `num_steps=100`.
 ### Installation
 
 ```bash
-pip install .
+git clone https://github.com/jslblar080/reckit.git
+cd reckit
+uv sync # pip install uv
 ```
 
 ### Training
