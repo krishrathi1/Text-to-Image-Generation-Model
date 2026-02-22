@@ -166,7 +166,7 @@ All images below were generated with `num_steps=30` and `num_steps=100`.
 ```bash
 git clone https://github.com/jslblar080/reckit.git
 cd reckit
-uv pip install . # pip install uv
+pip install .
 ```
 
 ### Training
