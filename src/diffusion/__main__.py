@@ -17,7 +17,7 @@ class Main:
 
     @staticmethod
     def save_current_plot(filename: str, folder="outputs", close=True) -> Path:
-        save_dir = Path.home() / "src" / "diffusion" / folder
+        save_dir = Path.cwd() / "src" / "diffusion" / folder
         save_dir.mkdir(parents=True, exist_ok=True)
         save_path = save_dir / filename
         plt.savefig(save_path)
@@ -164,7 +164,7 @@ class Main:
         )
         model.eval()
         model = model.to(device)
-        file_path = Path.home() / "src" / "diffusion" / "models" / args.model
+        file_path = Path.cwd() / "src" / "diffusion" / "models" / args.model
         checkpoint = torch.load(file_path, map_location=device)
         model.unet.load_state_dict(checkpoint["unet_state_dict"])
         print("✓ Loaded trained UNet weights")
