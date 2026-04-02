@@ -34,11 +34,24 @@ class CaptionDataset(BaseDataset):
                 print("Cached caption count mismatch, regenerating captions...")
 
             print("Initializing captioner...")
-            captioner = pipeline(
-                "image-to-text",
-                model="Salesforce/blip-image-captioning-base",
-                device=0 if torch.cuda.is_available() else -1,
-            )
+            captioner_kwargs = {
+                "task": "image-to-text",
+                "model": "Salesforce/blip-image-captioning-base",
+            }
+            if torch.cuda.is_available():
+                if torch.cuda.device_count() > 1:
+                    # Let HF/Accelerate shard model across available GPUs.
+                    captioner_kwargs["device_map"] = "auto"
+                    captioner_kwargs["torch_dtype"] = torch.float16
+                    print(
+                        f"Captioner multi-GPU mode enabled ({torch.cuda.device_count()} GPUs, device_map=auto)"
+                    )
+                else:
+                    captioner_kwargs["device"] = 0
+            else:
+                captioner_kwargs["device"] = -1
+
+            captioner = pipeline(**captioner_kwargs)
             print(f"Generating captions for {len(inputs)} images...")
             self._captions = self._generate_all_captions(captioner)
 
