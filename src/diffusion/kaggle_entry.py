@@ -7,9 +7,9 @@ from .__main__ import Main
 def main() -> None:
     default_args = [
         "--epochs",
-        "5",
+        "30",
         "--max-images",
-        "8000",
+        "28000",
         "--batch-size",
         "32",
         "--num-workers",

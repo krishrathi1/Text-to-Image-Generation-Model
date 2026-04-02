@@ -12,9 +12,9 @@ def main() -> None:
     # Reasonable Kaggle defaults; CLI args can override these.
     default_args = [
         "--epochs",
-        "5",
+        "30",
         "--max-images",
-        "8000",
+        "28000",
         "--batch-size",
         "32",
         "--num-workers",
