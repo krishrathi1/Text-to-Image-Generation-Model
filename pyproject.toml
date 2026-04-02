@@ -32,6 +32,7 @@ test = [
 [project.scripts]
 unet-train = "diffusion.__main__:Main.training"
 generate-image = "diffusion.__main__:Main.inference"
+kaggle-train = "diffusion.kaggle_entry:main"
 
 [project.urls]
 Repository = "https://github.com/jslblar080/reckit"

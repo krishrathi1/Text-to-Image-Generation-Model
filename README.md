@@ -179,6 +179,52 @@ unet-train --epochs 100
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--epochs` | 30 | Number of training epochs |
+| `--max-images` | 0 | Limit training set size (`0` = full set) |
+| `--batch-size` | 16 | Training batch size |
+| `--caption-batch-size` | 64 | BLIP captioning batch size |
+| `--num-workers` | 0 | DataLoader workers |
+| `--single-gpu` | false | Disable auto multi-GPU UNet DataParallel |
+| `--use-dummy-captions` | false | Skip BLIP captions for fast smoke tests |
+
+### Kaggle (Single Command, 2x T4)
+
+If you enable GPU in Kaggle and the runtime exposes two GPUs, training auto-uses both for UNet via DataParallel.
+
+```bash
+python kaggle_train.py
+```
+
+Override defaults if needed:
+
+```bash
+python kaggle_train.py --epochs 10 --max-images 12000 --batch-size 32 --caption-batch-size 96
+```
+
+### Local Kaggle CLI Setup (Windows)
+
+```powershell
+.\scripts\setup_kaggle.ps1
+```
+
+If needed, pass your token explicitly:
+
+```powershell
+.\scripts\setup_kaggle.ps1 -KaggleToken "<YOUR_TOKEN>" -PersistToken
+```
+
+### Build Upload ZIP (without venv/cache)
+
+```powershell
+.\scripts\make_kaggle_zip.ps1
+```
+
+### Kaggle Notebook Bootstrap Script
+
+Use:
+
+`kaggle/notebook_runner.py`
+
+inside a Kaggle notebook cell to clone/install/run automatically.
 
 ### Inference
 

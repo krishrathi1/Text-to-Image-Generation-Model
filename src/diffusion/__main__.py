@@ -2,6 +2,7 @@ import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn as nn
 import torchvision.transforms as TF
 
 from datasets import load_dataset
@@ -45,18 +46,44 @@ class Main:
             default=30,
             help="Number of training epochs",
         )
-        args = parser.parse_args()
-        """
-        CLIP: Pre-trained (openai/clip-vit-large-patch14)
-        VAE: Pre-trained (stabilityai/sd-vae-ft-mse)
-        UNet: Train from scratch
-        """
-        device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        parser.add_argument(
+            "--max-images",
+            type=int,
+            default=0,
+            help="Limit number of training images (0 uses full dataset)",
         )
-        assert device == torch.device(
-            "cuda"
-        ), "CUDA device not found. Operation requires a GPU."
+        parser.add_argument(
+            "--use-dummy-captions",
+            action="store_true",
+            help="Skip BLIP caption generation and use 'a photo' for all images (faster, lower quality)",
+        )
+        parser.add_argument(
+            "--caption-batch-size",
+            type=int,
+            default=64,
+            help="Batch size for BLIP caption generation",
+        )
+        parser.add_argument(
+            "--batch-size",
+            type=int,
+            default=16,
+            help="Training batch size",
+        )
+        parser.add_argument(
+            "--num-workers",
+            type=int,
+            default=0,
+            help="DataLoader workers",
+        )
+        parser.add_argument(
+            "--single-gpu",
+            action="store_true",
+            help="Disable multi-GPU DataParallel even when multiple CUDA devices are available",
+        )
+        args = parser.parse_args()
+
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        assert device == torch.device("cuda"), "CUDA device not found. Operation requires a GPU."
         print(f"Using device: {device}")
         print("\n" + "=" * 50)
         print("TRAINING EXAMPLE - UNet from Scratch")
@@ -67,15 +94,28 @@ class Main:
             vae_model_name="stabilityai/sd-vae-ft-mse",
         )
         model = model.to(device)
-        print("✓ CLIP: Pre-trained (frozen)")
-        print("✓ VAE: Pre-trained (frozen)")
-        print("✓ UNet: Random initialization (trainable)")
+
+        gpu_count = torch.cuda.device_count()
+        if gpu_count > 1 and not args.single_gpu:
+            print(f"Using {gpu_count} GPUs with DataParallel for UNet")
+            model.unet = nn.DataParallel(model.unet)
+
+        print("[OK] CLIP: Pre-trained (frozen)")
+        print("[OK] VAE: Pre-trained (frozen)")
+        print("[OK] UNet: Random initialization (trainable)")
+
         optimizer = torch.optim.AdamW(model.unet.parameters(), lr=1e-4)
         trainer = StableDiffusionTrainer(model, optimizer, device)
+
         dataset = load_dataset("mattymchen/celeba-hq", split="train")
-        N = len(dataset)
+        N = len(dataset) if args.max_images <= 0 else min(len(dataset), args.max_images)
+        if args.max_images > 0:
+            print(f"Using subset: {N}/{len(dataset)} images")
+
         x0 = torch.empty((N, 3, 256, 256), dtype=torch.float32)
         for idx, item in enumerate(dataset):
+            if idx >= N:
+                break
             assert isinstance(item, dict)
             img = item["image"].convert("RGB")
             img = img.resize((256, 256), Image.Resampling.LANCZOS)
@@ -83,9 +123,10 @@ class Main:
             x0[idx] = tensor
             if (idx + 1) % 1000 == 0:
                 print(f"Processed {idx+1}/{N}")
+
         transform = TF.Compose(
             [
-                TF.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),  # [-1.0, 1.0]
+                TF.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
             ]
         )
         TrainService(
@@ -94,8 +135,15 @@ class Main:
             transform,
             trainer,
             f"celeba_unet_1e_4_16_{args.epochs}.pt",
-            batch_size=16,
+            batch_size=args.batch_size,
             num_epochs=args.epochs,
+            use_captioner=not args.use_dummy_captions,
+            caption_batch_size=args.caption_batch_size,
+            caption_cache_file=str(
+                Path.cwd() / "src" / "diffusion" / "cache" / f"captions_celeba_{N}.pt"
+            ),
+            num_workers=args.num_workers,
+            pin_memory=device.type == "cuda",
         )
         end = datetime.now()
         end_time_formatted = end.strftime("%H:%M:%S")
@@ -147,12 +195,8 @@ class Main:
             help="Name of model",
         )
         args = parser.parse_args()
-        device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
-        assert device == torch.device(
-            "cuda"
-        ), "CUDA device not found. Operation requires a GPU."
+        device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        assert device == torch.device("cuda"), "CUDA device not found. Operation requires a GPU."
         print(f"Using device: {device}")
         print("\n" + "=" * 50)
         print("INFERENCE EXAMPLE")
@@ -167,7 +211,7 @@ class Main:
         file_path = Path.cwd() / "src" / "diffusion" / "models" / args.model
         checkpoint = torch.load(file_path, map_location=device)
         model.unet.load_state_dict(checkpoint["unet_state_dict"])
-        print("✓ Loaded trained UNet weights")
+        print("[OK] Loaded trained UNet weights")
         prompt = " ".join(args.prompt)
         print(f"\nGenerating image for prompt: '{prompt}'")
         print("This may take a few minutes...")
@@ -183,9 +227,6 @@ class Main:
         print(f"\nGenerated image shape: {images.shape}")
         images = images.detach().cpu()[0, :, :, :]
         images = images.permute(1, 2, 0)
-        """
-        min-max scaling
-        """
         images = (images - torch.min(images)) / (torch.max(images) - torch.min(images))
         plt.imshow(images)
         plt.axis("off")
@@ -198,13 +239,5 @@ class Main:
         print("End Time =", end_time_formatted)
 
 
-"""
-unet-train > log.txt
-unet-train --epochs 100 > second_log.txt
-
-generate-image A man with glasses and a beard
-generate-image A man with glasses and a beard --steps 50
-generate-image "A man with glasses and a beard" --model celeba_unet_1e_4_16_100.pt
-"""
 if __name__ == "__main__":
     pass

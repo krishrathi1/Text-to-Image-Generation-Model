@@ -19,15 +19,28 @@ class TrainService:
         batch_size=16,
         num_epochs=30,
         folder="models",
+        use_captioner=True,
+        caption_batch_size=64,
+        caption_cache_file: str | None = None,
+        num_workers=0,
+        pin_memory=False,
     ) -> None:
         print(f"Batch Size: {batch_size}")
         print(f"Number of epochs: {num_epochs}")
-        dataset = Config.ts_dataset(x0, transform)
+        dataset = Config.ts_dataset(
+            x0,
+            transform,
+            use_captioner=use_captioner,
+            caption_batch_size=caption_batch_size,
+            caption_cache_file=caption_cache_file,
+        )
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
             shuffle=True,
             drop_last=True,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
         )
         # Learning rate scheduler
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -47,7 +60,12 @@ class TrainService:
             print(
                 f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {avg_loss:.4f}, LR: {current_lr:.6f}"
             )
-        save_dir = Path.home() / "src" / "diffusion" / folder
+        save_dir = Path.cwd() / "src" / "diffusion" / folder
         save_dir.mkdir(parents=True, exist_ok=True)
         save_path = save_dir / filename
-        torch.save({"unet_state_dict": trainer.model.unet.state_dict()}, save_path)
+        unet = trainer.model.unet
+        if isinstance(unet, torch.nn.DataParallel):
+            state_dict = unet.module.state_dict()
+        else:
+            state_dict = unet.state_dict()
+        torch.save({"unet_state_dict": state_dict}, save_path)
